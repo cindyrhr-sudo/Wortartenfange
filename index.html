@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Wortarten-Profi - Custom Edition</title>
+    <title>Wortarten-Profi</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap');
@@ -135,11 +135,16 @@
             font-size: 0.75rem;
             transition: all 0.2s;
         }
-        .mode-btn.active { background: #0ea5e9; color: white; border-color: #0ea5e9; shadow: 0 4px 0 #0284c7; }
+        .mode-btn.active { background: #0ea5e9; color: white; border-color: #0ea5e9; }
+
+        .type-label-disabled {
+            opacity: 0.35;
+        }
     </style>
 </head>
 <body class="flex items-center justify-center select-none" id="body-main">
 
+    <!-- START MENU -->
     <div id="start-menu" class="absolute inset-0 z-[200] bg-sky-500 flex items-center justify-center p-4">
         <div class="app-container">
             <div class="menu-card shop-card">
@@ -174,7 +179,10 @@
                         </div>
                     </div>
 
-                    <div id="filter-options" class="grid grid-cols-2 gap-2"></div>
+                    <div>
+                        <p class="text-[10px] font-black text-slate-400 uppercase mb-2">Kategorien</p>
+                        <div id="filter-options" class="grid grid-cols-2 gap-2"></div>
+                    </div>
                     
                     <button onclick="startGame()" class="w-full py-4 bg-green-500 hover:bg-green-600 text-white rounded-3xl text-xl font-black shadow-[0_6px_0_#16a34a] active:shadow-none active:translate-y-1 transition-all">
                         LOS GEHT'S!
@@ -188,6 +196,7 @@
         </div>
     </div>
 
+    <!-- ADMIN PANEL -->
     <div id="admin-panel" class="absolute inset-0 z-[300] hidden bg-slate-900/60 backdrop-blur-sm p-4 flex items-center justify-center">
         <div class="menu-card w-full max-w-2xl h-[90vh] !border-b-0">
             <div class="flex justify-between items-center mb-4">
@@ -197,7 +206,7 @@
             <div class="custom-scroll space-y-4">
                 <div class="bg-amber-50 p-4 rounded-2xl border-2 border-amber-100">
                     <p class="text-[10px] font-bold text-amber-600 mb-1 uppercase">Import: Wort/Grundform/Typ (Pro Zeile eins)</p>
-                    <textarea id="bulk-input" rows="2" class="w-full p-3 rounded-xl border text-sm" placeholder="Häuser/Haus/Nomen"></textarea>
+                    <textarea id="bulk-input" rows="3" class="w-full p-3 rounded-xl border text-sm" placeholder="Häuser/Haus/Nomen&#10;lief/laufen/Verb&#10;schöner/schön/Adjektiv"></textarea>
                     <button onclick="importBulkList()" class="mt-2 bg-amber-500 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase">Importieren</button>
                 </div>
                 <div class="bg-sky-50 p-4 rounded-2xl border-2 border-sky-100">
@@ -225,6 +234,7 @@
         </div>
     </div>
 
+    <!-- GAME -->
     <main id="game-container" class="relative h-screen w-screen hidden bg-sky-50 overflow-hidden">
         <div id="background-emojis" class="bg-collection"></div>
         
@@ -240,10 +250,12 @@
         </div>
 
         <div id="words-layer" class="absolute inset-0"></div>
-        <div id="stars-layer" class="absolute inset-0 pointer-events-none"></div>
+        <!-- FIX: pointer-events-none entfernt, damit Sterne klickbar sind -->
+        <div id="stars-layer" class="absolute inset-0"></div>
         <div id="baskets-container" class="absolute bottom-0 left-0 right-0 h-[22vh] flex justify-around items-end p-4 gap-3"></div>
     </main>
 
+    <!-- FEEDBACK MODAL (falscher Korb) -->
     <div id="feedback-modal" class="absolute inset-0 z-[400] hidden flex items-center justify-center bg-sky-900/60 backdrop-blur-sm p-4">
         <div class="menu-card !border-red-400 max-w-sm w-full text-center p-8">
             <h2 class="text-2xl font-black text-red-500 mb-2">Fast!</h2>
@@ -256,6 +268,7 @@
         </div>
     </div>
 
+    <!-- RESULT MODAL -->
     <div id="result-modal" class="absolute inset-0 z-[350] hidden flex items-center justify-center bg-sky-900/80 p-4">
         <div class="menu-card !border-yellow-400 max-w-sm w-full text-center p-12">
             <h2 class="text-4xl font-black text-sky-600 mb-4">Fertig!</h2>
@@ -265,15 +278,503 @@
     </div>
 
     <script>
+        // ─── Konstanten ───────────────────────────────────────────────────────────
         const wordTypes = ["Nomen", "Verb", "Adjektiv", "Pronomen", "Präposition"];
-        const typeColors = { "Nomen": "bg-red-500 border-red-600", "Verb": "bg-blue-600 border-blue-700", "Adjektiv": "bg-green-500 border-green-600", "Pronomen": "bg-purple-500 border-purple-600", "Präposition": "bg-pink-500 border-pink-600" };
-        const shopEmojis = ["🐶", "🐱", "🦁", "🐼", "🦄", "🚀", "🛸", "🎮", "⚽", "🍦", "🌈", "REX", "🦜", "🐳", "🍕", "🏎️", "🛹", "🎸", "💎", "👾"];
+        const typeColors = {
+            "Nomen":      "bg-red-500 border-red-600",
+            "Verb":       "bg-blue-600 border-blue-700",
+            "Adjektiv":   "bg-green-500 border-green-600",
+            "Pronomen":   "bg-purple-500 border-purple-600",
+            "Präposition":"bg-pink-500 border-pink-600"
+        };
+        const shopEmojis = ["🐶","🐱","🦁","🐼","🦄","🚀","🛸","🎮","⚽","🍦","🌈","REX","🦜","🐳","🍕","🏎️","🛹","🎸","💎","👾"];
 
-        let totalCoins = parseInt(localStorage.getItem('w_coins')) || 0;
-        let boughtEmojis = JSON.parse(localStorage.getItem('w_emojis')) || [];
-        let customWords = JSON.parse(localStorage.getItem('w_words_v12')) || [
-            { word: "Häuser", type: "Nomen", base: "Haus" },
-    // Verben (verschiedene Formen)
+        // ─── State ────────────────────────────────────────────────────────────────
+        let totalCoins    = parseInt(localStorage.getItem('w_coins')) || 0;
+        let boughtEmojis  = JSON.parse(localStorage.getItem('w_emojis')) || [];
+
+        // FIX: Duplikate beim Laden entfernen
+        let rawWords = JSON.parse(localStorage.getItem('w_words_v12')) || getDefaultWords();
+        let customWords = deduplicateWords(rawWords);
+
+        let speedMode   = 'slow';
+        let gameGoal    = 'words';
+        let timeLeft    = 60;
+        let gameActive  = false, isPaused = false;
+        let spawnTimer  = null, timerInterval = null, rewardTimer = null;
+        let sessionCoins = 0, combo = 0, wordsSpawned = 0;
+        let activeWords  = [], isRewardMode = false, selectedTypes = [];
+        let curTouch     = null;
+
+        // ─── Hilfsfunktionen ─────────────────────────────────────────────────────
+        function deduplicateWords(arr) {
+            return arr.filter((w, i, a) =>
+                a.findIndex(x => x.word === w.word && x.type === w.type) === i
+            );
+        }
+
+        // ─── Init ─────────────────────────────────────────────────────────────────
+        function init() {
+            renderShop();
+            renderFilter();
+            renderAdminTable();
+            renderBackgroundEmojis();
+            document.getElementById('total-coins').innerText = totalCoins;
+            document.getElementById('new-type').innerHTML =
+                wordTypes.map(t => `<option>${t}</option>`).join('');
+        }
+
+        // ─── Einstellungen ────────────────────────────────────────────────────────
+        function setSpeed(mode) {
+            speedMode = mode;
+            ['slow','medium','fast'].forEach(m =>
+                document.getElementById(`btn-${m}`).classList.toggle('active', m === mode)
+            );
+        }
+
+        function setGameGoal(goal) {
+            gameGoal = goal;
+            ['words','time'].forEach(g =>
+                document.getElementById(`btn-${g}`).classList.toggle('active', g === goal)
+            );
+        }
+
+        // ─── Shop ─────────────────────────────────────────────────────────────────
+        function renderShop() {
+            document.getElementById('shop-grid').innerHTML = shopEmojis.map(emoji => {
+                const bought = boughtEmojis.includes(emoji);
+                return `<div onclick="buyEmoji('${emoji}')" class="aspect-square flex items-center justify-center rounded-2xl cursor-pointer border-4 transition-all active:scale-90 ${bought ? 'bg-green-50 border-green-300' : 'bg-slate-50 border-slate-100 opacity-40 grayscale'}"><span class="text-2xl">${emoji}</span></div>`;
+            }).join('');
+        }
+
+        function buyEmoji(emoji) {
+            if (boughtEmojis.includes(emoji)) return;
+            if (totalCoins >= 20) {
+                totalCoins -= 20;
+                boughtEmojis.push(emoji);
+                saveState();
+                renderShop();
+                renderBackgroundEmojis();
+                document.getElementById('total-coins').innerText = totalCoins;
+            }
+        }
+
+        function renderBackgroundEmojis() {
+            document.getElementById('background-emojis').innerHTML =
+                boughtEmojis.map(e => `<div class="bg-emoji">${e}</div>`).join('');
+        }
+
+        // ─── Filter ───────────────────────────────────────────────────────────────
+        // FIX: Kategorien ohne Wörter werden als deaktiviert angezeigt (aber nicht versteckt)
+        function renderFilter() {
+            document.getElementById('filter-options').innerHTML = wordTypes.map(t => {
+                const hasWords = customWords.some(w => w.type === t);
+                return `
+                    <label class="flex items-center space-x-2 p-2 bg-white border-2 border-slate-100 rounded-xl cursor-pointer ${hasWords ? '' : 'type-label-disabled'}">
+                        <input type="checkbox" ${hasWords ? 'checked' : ''} ${hasWords ? '' : 'disabled'} value="${t}" class="type-filter">
+                        <span class="font-bold text-slate-700 text-[10px]">${t} ${hasWords ? '' : '(keine Wörter)'}</span>
+                    </label>`;
+            }).join('');
+        }
+
+        // ─── Spiel starten ────────────────────────────────────────────────────────
+        function startGame() {
+            const checked = Array.from(document.querySelectorAll('.type-filter:checked')).map(cb => cb.value);
+
+            // FIX: Nur Typen verwenden, für die es tatsächlich Wörter gibt
+            const selected = checked.filter(t => customWords.some(w => w.type === t));
+
+            // Falls nach dem Filter nichts übrig bleibt → sofort beenden
+            if (selected.length === 0) {
+                endGameNoWords();
+                return;
+            }
+
+            selectedTypes = selected;
+
+            document.getElementById('start-menu').classList.add('hidden');
+            document.getElementById('game-container').classList.remove('hidden');
+            setupBaskets();
+
+            gameActive    = true;
+            sessionCoins  = 0;
+            wordsSpawned  = 0;
+            combo         = 0;
+            activeWords   = [];
+            timeLeft      = 60;
+            document.getElementById('words-layer').innerHTML = '';
+            document.getElementById('stars-layer').innerHTML = '';
+
+            updateGameUI();
+            gameLoop();
+
+            const maxOnScreen = speedMode === 'slow' ? 1 : speedMode === 'medium' ? 2 : 3;
+
+            spawnTimer = setInterval(() => {
+                if (!gameActive || isPaused) return;
+
+                // FIX: Prüfe ob noch spielbare Wörter vorhanden
+                const pool = customWords.filter(w => selectedTypes.includes(w.type));
+                if (pool.length === 0) {
+                    if (activeWords.length === 0) { endGame(); }
+                    return;
+                }
+
+                if (gameGoal === 'words' && wordsSpawned >= 20) {
+                    if (activeWords.length === 0) endGame();
+                    return;
+                }
+                if (activeWords.length < maxOnScreen) spawnWord();
+            }, 800);
+
+            if (gameGoal === 'time') {
+                timerInterval = setInterval(() => {
+                    if (!isPaused && gameActive) {
+                        timeLeft--;
+                        updateGameUI();
+                        if (timeLeft <= 0) endGame();
+                    }
+                }, 1000);
+            }
+        }
+
+        // Zeigt kurz ein "keine Wörter"-Modal und endet das Level
+        function endGameNoWords() {
+            document.getElementById('start-menu').classList.add('hidden');
+            document.getElementById('game-container').classList.remove('hidden');
+            document.getElementById('baskets-container').innerHTML = '';
+            document.getElementById('words-layer').innerHTML = '';
+            sessionCoins = 0;
+            document.getElementById('session-coins').innerText = 0;
+            document.getElementById('result-modal').classList.remove('hidden');
+        }
+
+        // ─── Wort spawnen ─────────────────────────────────────────────────────────
+        function spawnWord() {
+            const pool = customWords.filter(w => selectedTypes.includes(w.type));
+            if (pool.length === 0) return;
+
+            const data = { ...pool[Math.floor(Math.random() * pool.length)], id: Date.now() + Math.random() };
+            const el = document.createElement('div');
+            el.className = 'word-card';
+            el.innerText  = data.word;
+            el.draggable  = true;
+
+            el.style.left = Math.random() * (window.innerWidth - 220) + 'px';
+            el.style.top  = '-80px';
+
+            el.ondragstart = (e) => {
+                e.dataTransfer.setData('application/json', JSON.stringify(data));
+                el.style.opacity = "0.5";
+            };
+            el.ondragend = () => { el.style.opacity = "1"; };
+
+            document.getElementById('words-layer').appendChild(el);
+
+            // FIX: activeWords.push VOR Event-Binding, damit obj sicher gefunden wird
+            const wordObj = { id: data.id, el, data, y: -80, isDragging: false };
+            activeWords.push(wordObj);
+            wordsSpawned++;
+            updateGameUI();
+
+            el.ontouchstart = (e) => {
+                if (!isPaused) {
+                    const obj = activeWords.find(w => w.id === data.id);
+                    if (obj) {
+                        obj.isDragging = true;
+                        curTouch = { data, el, obj };
+                    }
+                }
+            };
+            el.ontouchmove = handleTouchMove;
+            el.ontouchend  = handleTouchEnd;
+        }
+
+        // ─── Spiellogik ───────────────────────────────────────────────────────────
+        function processChoice(data, basketType) {
+            const basketEl = document.querySelector(`.basket[data-type="${basketType}"]`);
+            if (!basketEl) return;
+
+            if (data.type === basketType) {
+                sessionCoins++;
+                combo++;
+                basketEl.classList.remove('bounce');
+                void basketEl.offsetWidth;
+                basketEl.classList.add('bounce');
+                if (combo === 5 && !isRewardMode) startRewardMode();
+                removeWord(data.id);
+            } else {
+                stopRewardMode();
+                combo = 0;
+                basketEl.classList.add('shake');
+                setTimeout(() => basketEl.classList.remove('shake'), 500);
+                showError(data, basketType);
+            }
+            updateGameUI();
+        }
+
+        function gameLoop() {
+            if (!isPaused && gameActive) {
+                const limit = window.innerHeight * 0.85;
+                const speed = speedMode === 'slow' ? 1.5 : speedMode === 'medium' ? 2.5 : 4;
+                for (let i = activeWords.length - 1; i >= 0; i--) {
+                    const obj = activeWords[i];
+                    if (!obj.isDragging) {
+                        obj.y += speed;
+                        obj.el.style.top = obj.y + 'px';
+                        if (obj.y > limit) {
+                            stopRewardMode();
+                            combo = 0;
+                            updateGameUI();
+                            obj.el.remove();
+                            activeWords.splice(i, 1);
+                        }
+                    }
+                }
+            }
+            if (gameActive) requestAnimationFrame(gameLoop);
+        }
+
+        function setupBaskets() {
+            document.getElementById('baskets-container').innerHTML = selectedTypes.map(t => `
+                <div class="basket ${typeColors[t]} flex-1 h-full rounded-t-[2.5rem] border-t-8" data-type="${t}"
+                     ondragover="event.preventDefault(); this.classList.add('drag-over')"
+                     ondragleave="this.classList.remove('drag-over')"
+                     ondrop="handleDrop(event, '${t}')">
+                    <span class="p-2 text-xs">${t}</span>
+                </div>
+            `).join('');
+        }
+
+        function handleDrop(e, bt) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            try {
+                processChoice(JSON.parse(e.dataTransfer.getData('application/json')), bt);
+            } catch(_) {}
+        }
+
+        // ─── Reward-Mode ──────────────────────────────────────────────────────────
+        function startRewardMode() {
+            isRewardMode = true;
+            document.getElementById('body-main').classList.add('reward-mode');
+            rewardTimer = setInterval(() => {
+                if (!isRewardMode || !gameActive || isPaused) return;
+                const s = document.createElement('div');
+                s.className = 'star';
+                s.innerHTML  = '⭐';
+                s.style.left = Math.random() * 85 + 'vw';
+                s.style.top  = '-80px';
+                s.style.transition = "top 4s linear, opacity 0.5s";
+                document.getElementById('stars-layer').appendChild(s);
+                setTimeout(() => { s.style.top = "105vh"; }, 50);
+                const collect = (e) => {
+                    e.preventDefault();
+                    sessionCoins += 2;
+                    updateGameUI();
+                    s.style.transform = 'scale(2)';
+                    s.style.opacity   = '0';
+                    setTimeout(() => s.remove(), 200);
+                };
+                s.onmousedown  = collect;
+                s.ontouchstart = collect;
+                setTimeout(() => { if (s.parentNode) s.remove(); }, 4000);
+            }, 750);
+        }
+
+        function stopRewardMode() {
+            isRewardMode = false;
+            clearInterval(rewardTimer);
+            document.getElementById('body-main').classList.remove('reward-mode');
+        }
+
+        // ─── Admin / Editor ───────────────────────────────────────────────────────
+        function toggleAdmin(show) {
+            document.getElementById('admin-panel').classList.toggle('hidden', !show);
+        }
+
+        function saveState() {
+            localStorage.setItem('w_coins',      totalCoins);
+            localStorage.setItem('w_emojis',     JSON.stringify(boughtEmojis));
+            localStorage.setItem('w_words_v12',  JSON.stringify(customWords));
+        }
+
+        function importBulkList() {
+            const input = document.getElementById('bulk-input').value.trim();
+            if (!input) return;
+
+            const lines = input.split('\n');
+            let added = 0;
+
+            lines.forEach(line => {
+                const p = line.trim().split('/');
+                if (p.length === 3) {
+                    const word      = p[0].trim();
+                    const base      = p[1].trim();
+                    const typeInput = p[2].trim();
+                    const matched   = wordTypes.find(t => t.toLowerCase() === typeInput.toLowerCase());
+                    if (word && base && matched) {
+                        // Nur hinzufügen wenn kein Duplikat
+                        const isDupe = customWords.some(x => x.word === word && x.type === matched);
+                        if (!isDupe) {
+                            customWords.push({ word, base, type: matched });
+                            added++;
+                        }
+                    }
+                }
+            });
+
+            if (added > 0) {
+                saveState();
+                renderAdminTable();
+                renderFilter(); // Filter-Checkboxen aktualisieren
+                document.getElementById('bulk-input').value = '';
+            } else {
+                alert('Format: Wort/Grundform/Wortart\nBeispiel: Häuser/Haus/Nomen\n\nKeine neuen (nicht doppelten) Wörter gefunden.');
+            }
+        }
+
+        function addCustomWord() {
+            const w = document.getElementById('new-word').value.trim();
+            const b = document.getElementById('new-base').value.trim();
+            const t = document.getElementById('new-type').value;
+            if (w && b) {
+                const isDupe = customWords.some(x => x.word === w && x.type === t);
+                if (!isDupe) {
+                    customWords.push({ word: w, base: b, type: t });
+                    saveState();
+                    renderAdminTable();
+                    renderFilter();
+                }
+                document.getElementById('new-word').value = '';
+                document.getElementById('new-base').value = '';
+            }
+        }
+
+        function renderAdminTable() {
+            document.getElementById('word-list-table').innerHTML = customWords.map((w, i) => `
+                <tr class="border-b hover:bg-slate-50">
+                    <td class="p-3 font-bold">${w.word}</td>
+                    <td class="p-3 italic text-slate-400">${w.base}</td>
+                    <td class="p-3">
+                        <span class="px-2 py-1 rounded-lg text-[10px] font-black text-white ${typeColors[w.type].split(' ')[0]}">
+                            ${w.type}
+                        </span>
+                    </td>
+                    <td class="p-3 text-right">
+                        <button onclick="deleteWord(${i})" class="text-slate-300 hover:text-red-500 transition-colors">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function deleteWord(i) {
+            customWords.splice(i, 1);
+            saveState();
+            renderAdminTable();
+            renderFilter();
+        }
+
+        // ─── Navigation ───────────────────────────────────────────────────────────
+        function goHome() {
+            gameActive = false;
+            isPaused   = false;
+            stopRewardMode();
+            clearInterval(spawnTimer);
+            clearInterval(timerInterval);
+            document.getElementById('game-container').classList.add('hidden');
+            document.getElementById('result-modal').classList.add('hidden');
+            document.getElementById('feedback-modal').classList.add('hidden');
+            document.getElementById('start-menu').classList.remove('hidden');
+            document.getElementById('total-coins').innerText = totalCoins;
+            renderFilter(); // Filter nach Rückkehr neu rendern (falls Wörter geändert)
+        }
+
+        // ─── UI Updates ───────────────────────────────────────────────────────────
+        function updateGameUI() {
+            document.getElementById('game-coins-display').innerText = sessionCoins;
+            if (gameGoal === 'words') {
+                document.getElementById('counter-display').innerText = wordsSpawned;
+                document.getElementById('goal-label').innerText = '/20 Wörter';
+            } else {
+                document.getElementById('counter-display').innerText = timeLeft;
+                document.getElementById('goal-label').innerText = ' Sek.';
+            }
+            const c = document.getElementById('combo-container');
+            if (combo >= 2) {
+                c.classList.remove('hidden');
+                document.getElementById('combo-count').innerText = combo;
+            } else {
+                c.classList.add('hidden');
+            }
+        }
+
+        function showError(data, clicked) {
+            isPaused = true;
+            document.getElementById('error-text').innerHTML =
+                `<b>"${data.word}"</b> ist ein ${data.type}, kein ${clicked}.`;
+            document.getElementById('base-display').innerText = data.base;
+            document.getElementById('feedback-modal').classList.remove('hidden');
+        }
+
+        function resumeGame() {
+            document.getElementById('feedback-modal').classList.add('hidden');
+            activeWords.forEach(w => w.el.remove());
+            activeWords = [];
+            isPaused = false;
+        }
+
+        function removeWord(id) {
+            const i = activeWords.findIndex(w => w.id === id);
+            if (i > -1) { activeWords[i].el.remove(); activeWords.splice(i, 1); }
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(spawnTimer);
+            clearInterval(timerInterval);
+            stopRewardMode();
+            totalCoins += sessionCoins;
+            document.getElementById('session-coins').innerText = sessionCoins;
+            document.getElementById('result-modal').classList.remove('hidden');
+            saveState();
+        }
+
+        // ─── Touch Handling ───────────────────────────────────────────────────────
+        function handleTouchMove(e) {
+            if (!curTouch || isPaused) return;
+            e.preventDefault();
+            const t = e.touches[0];
+            curTouch.el.style.left = (t.clientX - 100) + 'px';
+            curTouch.el.style.top  = (t.clientY - 40)  + 'px';
+            if (curTouch.obj) curTouch.obj.y = t.clientY - 40;
+            document.querySelectorAll('.basket').forEach(b => {
+                const r = b.getBoundingClientRect();
+                if (t.clientX > r.left && t.clientX < r.right && t.clientY > r.top) {
+                    b.classList.add('drag-over');
+                } else {
+                    b.classList.remove('drag-over');
+                }
+            });
+        }
+
+        function handleTouchEnd(e) {
+            if (!curTouch) return;
+            const t = e.changedTouches[0];
+            document.querySelectorAll('.basket').forEach(b => {
+                b.classList.remove('drag-over');
+                const r = b.getBoundingClientRect();
+                if (t.clientX > r.left && t.clientX < r.right && t.clientY > r.top) {
+                    processChoice(curTouch.data, b.dataset.type);
+                }
+            });
+            if (curTouch.obj) curTouch.obj.isDragging = false;
+            curTouch = null;
+        }
+
+        // ─── Standardwörter ───────────────────────────────────────────────────────
+        function getDefaultWords() {
+            return [
     { word: "liefst", type: "Verb", base: "laufen" },
     { word: "gegangen", type: "Verb", base: "gehen" },
     { word: "singt", type: "Verb", base: "singen" },
@@ -314,8 +815,45 @@
     { word: "reiste", type: "Verb", base: "reisen" },
     { word: "gekauft", type: "Verb", base: "kaufen" },
     { word: "suchst", type: "Verb", base: "suchen" },
-
-    // Nomen (Pluralformen)
+    { word: "kochte", type: "Verb", base: "kochen" },
+    { word: "gebacken", type: "Verb", base: "backen" },
+    { word: "wäschst", type: "Verb", base: "waschen" },
+    { word: "putzte", type: "Verb", base: "putzen" },
+    { word: "gemalt", type: "Verb", base: "malen" },
+    { word: "zeichnest", type: "Verb", base: "zeichnen" },
+    { word: "sprangen", type: "Verb", base: "springen" },
+    { word: "tanzt", type: "Verb", base: "tanzen" },
+    { word: "gehört", type: "Verb", base: "hören" },
+    { word: "siehst", type: "Verb", base: "sehen" },
+    { word: "blickte", type: "Verb", base: "blicken" },
+    { word: "gezeigt", type: "Verb", base: "zeigen" },
+    { word: "sagst", type: "Verb", base: "sagen" },
+    { word: "fragte", type: "Verb", base: "fragen" },
+    { word: "geantwortet", type: "Verb", base: "antworten" },
+    { word: "glaubst", type: "Verb", base: "glauben" },
+    { word: "gewusst", type: "Verb", base: "wissen" },
+    { word: "versteht", type: "Verb", base: "verstehen" },
+    { word: "gelernt", type: "Verb", base: "lernen" },
+    { word: "lehrte", type: "Verb", base: "lehren" },
+    { word: "schreibst", type: "Verb", base: "schreiben" },
+    { word: "gelesen", type: "Verb", base: "lesen" },
+    { word: "rechnete", type: "Verb", base: "rechnen" },
+    { word: "gezählt", type: "Verb", base: "zählen" },
+    { word: "läufst", type: "Verb", base: "laufen" },
+    { word: "rannte", type: "Verb", base: "rennen" },
+    { word: "gefahren", type: "Verb", base: "fahren" },
+    { word: "reitest", type: "Verb", base: "reiten" },
+    { word: "schwamm", type: "Verb", base: "schwimmen" },
+    { word: "getaucht", type: "Verb", base: "tauchen" },
+    { word: "wanderte", type: "Verb", base: "wandern" },
+    { word: "kletterst", type: "Verb", base: "klettern" },
+    { word: "fiel", type: "Verb", base: "fallen" },
+    { word: "gestiegen", type: "Verb", base: "steigen" },
+    { word: "sinkst", type: "Verb", base: "sinken" },
+    { word: "flogst", type: "Verb", base: "fliegen" },
+    { word: "gelandet", type: "Verb", base: "landen" },
+    { word: "startete", type: "Verb", base: "starten" },
+    { word: "getrunken", type: "Verb", base: "trinken" },
     { word: "Häuser", type: "Nomen", base: "Haus" },
     { word: "Bäume", type: "Nomen", base: "Baum" },
     { word: "Bücher", type: "Nomen", base: "Buch" },
@@ -356,92 +894,6 @@
     { word: "Schüler", type: "Nomen", base: "Schüler" },
     { word: "Hefte", type: "Nomen", base: "Heft" },
     { word: "Stifte", type: "Nomen", base: "Stift" },
-
-    // Adjektive (Gesteigert)
-    { word: "schneller", type: "Adjektiv", base: "schnell" },
-    { word: "schnellsten", type: "Adjektiv", base: "schnell" },
-    { word: "größer", type: "Adjektiv", base: "groß" },
-    { word: "größten", type: "Adjektiv", base: "groß" },
-    { word: "kleiner", type: "Adjektiv", base: "klein" },
-    { word: "kleinsten", type: "Adjektiv", base: "klein" },
-    { word: "besser", type: "Adjektiv", base: "gut" },
-    { word: "besten", type: "Adjektiv", base: "gut" },
-    { word: "mehr", type: "Adjektiv", base: "viel" },
-    { word: "meisten", type: "Adjektiv", base: "viel" },
-    { word: "schöner", type: "Adjektiv", base: "schön" },
-    { word: "schönsten", type: "Adjektiv", base: "schön" },
-    { word: "älter", type: "Adjektiv", base: "alt" },
-    { word: "ältesten", type: "Adjektiv", base: "alt" },
-    { word: "jünger", type: "Adjektiv", base: "jung" },
-    { word: "jüngsten", type: "Adjektiv", base: "jung" },
-    { word: "stärker", type: "Adjektiv", base: "stark" },
-    { word: "stärksten", type: "Adjektiv", base: "stark" },
-    { word: "schwächer", type: "Adjektiv", base: "schwach" },
-    { word: "schwächsten", type: "Adjektiv", base: "schwach" },
-    { word: "höher", type: "Adjektiv", base: "hoch" },
-    { word: "höchsten", type: "Adjektiv", base: "hoch" },
-    { word: "tiefer", type: "Adjektiv", base: "tief" },
-    { word: "tiefsten", type: "Adjektiv", base: "tief" },
-    { word: "breiter", type: "Adjektiv", base: "breit" },
-    { word: "breitesten", type: "Adjektiv", base: "breit" },
-    { word: "länger", type: "Adjektiv", base: "lang" },
-    { word: "längsten", type: "Adjektiv", base: "lang" },
-    { word: "kürzer", type: "Adjektiv", base: "kurz" },
-    { word: "kürzesten", type: "Adjektiv", base: "kurz" },
-    { word: "teurer", type: "Adjektiv", base: "teuer" },
-    { word: "teuersten", type: "Adjektiv", base: "teuer" },
-    { word: "billiger", type: "Adjektiv", base: "billig" },
-    { word: "billigsten", type: "Adjektiv", base: "billig" },
-    { word: "härter", type: "Adjektiv", base: "hart" },
-    { word: "härtesten", type: "Adjektiv", base: "hart" },
-    { word: "weicher", type: "Adjektiv", base: "weich" },
-    { word: "weichsten", type: "Adjektiv", base: "weich" },
-    { word: "heller", type: "Adjektiv", base: "hell" },
-    { word: "hellsten", type: "Adjektiv", base: "hell" },
-
-    // Weitere Verben
-    { word: "kochte", type: "Verb", base: "kochen" },
-    { word: "gebacken", type: "Verb", base: "backen" },
-    { word: "wäschst", type: "Verb", base: "waschen" },
-    { word: "putzte", type: "Verb", base: "putzen" },
-    { word: "gemalt", type: "Verb", base: "malen" },
-    { word: "zeichnest", type: "Verb", base: "zeichnen" },
-    { word: "sprangen", type: "Verb", base: "springen" },
-    { word: "getrunken", type: "Verb", base: "trinken" },
-    { word: "tanzt", type: "Verb", base: "tanzen" },
-    { word: "gehört", type: "Verb", base: "hören" },
-    { word: "siehst", type: "Verb", base: "sehen" },
-    { word: "blickte", type: "Verb", base: "blicken" },
-    { word: "gezeigt", type: "Verb", base: "zeigen" },
-    { word: "sagst", type: "Verb", base: "sagen" },
-    { word: "fragte", type: "Verb", base: "fragen" },
-    { word: "geantwortet", type: "Verb", base: "antworten" },
-    { word: "glaubst", type: "Verb", base: "glauben" },
-    { word: "gewusst", type: "Verb", base: "wissen" },
-    { word: "versteht", type: "Verb", base: "verstehen" },
-    { word: "gelernt", type: "Verb", base: "lernen" },
-    { word: "lehrte", type: "Verb", base: "lehren" },
-    { word: "schreibst", type: "Verb", base: "schreiben" },
-    { word: "gelesen", type: "Verb", base: "lesen" },
-    { word: "rechnete", type: "Verb", base: "rechnen" },
-    { word: "gezählt", type: "Verb", base: "zählen" },
-    { word: "läufst", type: "Verb", base: "laufen" },
-    { word: "rannte", type: "Verb", base: "rennen" },
-    { word: "gefahren", type: "Verb", base: "fahren" },
-    { word: "reitest", type: "Verb", base: "reiten" },
-    { word: "schwamm", type: "Verb", base: "schwimmen" },
-    { word: "getaucht", type: "Verb", base: "tauchen" },
-    { word: "wanderte", type: "Verb", base: "wandern" },
-    { word: "kletterst", type: "Verb", base: "klettern" },
-    { word: "fiel", type: "Verb", base: "fallen" },
-    { word: "gestiegen", type: "Verb", base: "steigen" },
-    { word: "sinkst", type: "Verb", base: "sinken" },
-    { word: "flogst", type: "Verb", base: "fliegen" },
-    { word: "gelandet", type: "Verb", base: "landen" },
-    { word: "startete", type: "Verb", base: "starten" },
-    { word: "fährst", type: "Verb", base: "fahren" },
-
-    // Weitere Nomen
     { word: "Hände", type: "Nomen", base: "Hand" },
     { word: "Füße", type: "Nomen", base: "Fuß" },
     { word: "Köpfe", type: "Nomen", base: "Kopf" },
@@ -482,8 +934,46 @@
     { word: "Töpfe", type: "Nomen", base: "Topf" },
     { word: "Körbe", type: "Nomen", base: "Korb" },
     { word: "Taschen", type: "Nomen", base: "Tasche" },
-
-    // Weitere Adjektive
+    { word: "schneller", type: "Adjektiv", base: "schnell" },
+    { word: "schnellsten", type: "Adjektiv", base: "schnell" },
+    { word: "größer", type: "Adjektiv", base: "groß" },
+    { word: "größten", type: "Adjektiv", base: "groß" },
+    { word: "kleiner", type: "Adjektiv", base: "klein" },
+    { word: "kleinsten", type: "Adjektiv", base: "klein" },
+    { word: "besser", type: "Adjektiv", base: "gut" },
+    { word: "besten", type: "Adjektiv", base: "gut" },
+    { word: "mehr", type: "Adjektiv", base: "viel" },
+    { word: "meisten", type: "Adjektiv", base: "viel" },
+    { word: "schöner", type: "Adjektiv", base: "schön" },
+    { word: "schönsten", type: "Adjektiv", base: "schön" },
+    { word: "älter", type: "Adjektiv", base: "alt" },
+    { word: "ältesten", type: "Adjektiv", base: "alt" },
+    { word: "jünger", type: "Adjektiv", base: "jung" },
+    { word: "jüngsten", type: "Adjektiv", base: "jung" },
+    { word: "stärker", type: "Adjektiv", base: "stark" },
+    { word: "stärksten", type: "Adjektiv", base: "stark" },
+    { word: "schwächer", type: "Adjektiv", base: "schwach" },
+    { word: "schwächsten", type: "Adjektiv", base: "schwach" },
+    { word: "höher", type: "Adjektiv", base: "hoch" },
+    { word: "höchsten", type: "Adjektiv", base: "hoch" },
+    { word: "tiefer", type: "Adjektiv", base: "tief" },
+    { word: "tiefsten", type: "Adjektiv", base: "tief" },
+    { word: "breiter", type: "Adjektiv", base: "breit" },
+    { word: "breitesten", type: "Adjektiv", base: "breit" },
+    { word: "länger", type: "Adjektiv", base: "lang" },
+    { word: "längsten", type: "Adjektiv", base: "lang" },
+    { word: "kürzer", type: "Adjektiv", base: "kurz" },
+    { word: "kürzesten", type: "Adjektiv", base: "kurz" },
+    { word: "teurer", type: "Adjektiv", base: "teuer" },
+    { word: "teuersten", type: "Adjektiv", base: "teuer" },
+    { word: "billiger", type: "Adjektiv", base: "billig" },
+    { word: "billigsten", type: "Adjektiv", base: "billig" },
+    { word: "härter", type: "Adjektiv", base: "hart" },
+    { word: "härtesten", type: "Adjektiv", base: "hart" },
+    { word: "weicher", type: "Adjektiv", base: "weich" },
+    { word: "weichsten", type: "Adjektiv", base: "weich" },
+    { word: "heller", type: "Adjektiv", base: "hell" },
+    { word: "hellsten", type: "Adjektiv", base: "hell" },
     { word: "kälter", type: "Adjektiv", base: "kalt" },
     { word: "kältesten", type: "Adjektiv", base: "kalt" },
     { word: "wärmer", type: "Adjektiv", base: "warm" },
@@ -512,10 +1002,6 @@
     { word: "lautesten", type: "Adjektiv", base: "laut" },
     { word: "leiser", type: "Adjektiv", base: "leise" },
     { word: "leisesten", type: "Adjektiv", base: "leise" },
-    { word: "härter", type: "Adjektiv", base: "hart" },
-    { word: "härtesten", type: "Adjektiv", base: "hart" },
-    { word: "weicher", type: "Adjektiv", base: "weich" },
-    { word: "weichsten", type: "Adjektiv", base: "weich" },
     { word: "schwerer", type: "Adjektiv", base: "schwer" },
     { word: "schwersten", type: "Adjektiv", base: "schwer" },
     { word: "leichter", type: "Adjektiv", base: "leicht" },
@@ -524,276 +1010,69 @@
     { word: "engsten", type: "Adjektiv", base: "eng" },
     { word: "weiter", type: "Adjektiv", base: "weit" },
     { word: "weitesten", type: "Adjektiv", base: "weit" },
-            { word: "liefst", type: "Verb", base: "laufen" },
-            { word: "schneller", type: "Adjektiv", base: "schnell" }
-        ];
-
-        let speedMode = 'slow';
-        let gameGoal = 'words';
-        let timeLeft = 60;
-        let gameActive = false, isPaused = false, spawnTimer = null, timerInterval = null, rewardTimer = null;
-        let sessionCoins = 0, combo = 0, wordsSpawned = 0, activeWords = [], isRewardMode = false, selectedTypes = [];
-
-        function init() {
-            renderShop(); renderFilter(); renderAdminTable(); renderBackgroundEmojis();
-            document.getElementById('total-coins').innerText = totalCoins;
-            document.getElementById('new-type').innerHTML = wordTypes.map(t => `<option>${t}</option>`).join('');
-        }
-
-        function setSpeed(mode) {
-            speedMode = mode;
-            ['slow', 'medium', 'fast'].forEach(m => document.getElementById(`btn-${m}`).classList.toggle('active', m === mode));
-        }
-
-        function setGameGoal(goal) {
-            gameGoal = goal;
-            ['words', 'time'].forEach(g => document.getElementById(`btn-${g}`).classList.toggle('active', g === goal));
-        }
-
-        function renderShop() {
-            document.getElementById('shop-grid').innerHTML = shopEmojis.map(emoji => {
-                const bought = boughtEmojis.includes(emoji);
-                return `<div onclick="buyEmoji('${emoji}')" class="aspect-square flex items-center justify-center rounded-2xl cursor-pointer border-4 transition-all active:scale-90 ${bought ? 'bg-green-50 border-green-300' : 'bg-slate-50 border-slate-100 opacity-40 grayscale'}"><span class="text-2xl">${emoji}</span></div>`;
-            }).join('');
-        }
-
-        function renderFilter() {
-            document.getElementById('filter-options').innerHTML = wordTypes.map(t => `<label class="flex items-center space-x-2 p-2 bg-white border-2 border-slate-100 rounded-xl cursor-pointer"><input type="checkbox" checked value="${t}" class="type-filter"><span class="font-bold text-slate-700 text-[10px]">${t}</span></label>`).join('');
-        }
-
-        function buyEmoji(emoji) {
-            if(boughtEmojis.includes(emoji)) return;
-            if(totalCoins >= 20) { totalCoins -= 20; boughtEmojis.push(emoji); saveState(); renderShop(); renderBackgroundEmojis(); document.getElementById('total-coins').innerText = totalCoins; }
-        }
-
-        function renderBackgroundEmojis() { document.getElementById('background-emojis').innerHTML = boughtEmojis.map(e => `<div class="bg-emoji">${e}</div>`).join(''); }
-
-        function startGame() {
-            const selected = Array.from(document.querySelectorAll('.type-filter:checked')).map(cb => cb.value);
-            const pool = customWords.filter(w => selected.includes(w.type));
-            if(pool.length === 0) return alert("Wähle Kategorien mit Wörtern!");
-            
-            selectedTypes = selected;
-            document.getElementById('start-menu').classList.add('hidden');
-            document.getElementById('game-container').classList.remove('hidden');
-            setupBaskets();
-            
-            gameActive = true; sessionCoins = 0; wordsSpawned = 0; combo = 0; activeWords = []; timeLeft = 60;
-            document.getElementById('words-layer').innerHTML = '';
-            
-            updateGameUI(); 
-            gameLoop();
-
-            const maxOnScreen = (speedMode === 'slow') ? 1 : (speedMode === 'medium' ? 2 : 3);
-            
-            spawnTimer = setInterval(() => {
-                if(!gameActive || isPaused) return;
-                if(gameGoal === 'words' && wordsSpawned >= 20) {
-                    if(activeWords.length === 0) endGame();
-                    return;
-                }
-                if(activeWords.length < maxOnScreen) spawnWord();
-            }, 800);
-
-            if(gameGoal === 'time') {
-                timerInterval = setInterval(() => {
-                    if(!isPaused && gameActive) {
-                        timeLeft--;
-                        updateGameUI();
-                        if(timeLeft <= 0) endGame();
-                    }
-                }, 1000);
-            }
-        }
-
-        function spawnWord() {
-            const pool = customWords.filter(w => selectedTypes.includes(w.type));
-            const data = {...pool[Math.floor(Math.random() * pool.length)], id: Date.now()};
-            const el = document.createElement('div');
-            el.className = 'word-card';
-            el.innerText = data.word;
-            el.draggable = true;
-            el.style.left = Math.random() * (window.innerWidth - 200) + 'px';
-            el.style.top = '-80px';
-
-            el.ondragstart = (e) => { e.dataTransfer.setData('application/json', JSON.stringify(data)); el.style.opacity = "0.5"; };
-            el.ondragend = () => el.style.opacity = "1";
-            el.ontouchstart = (e) => { if(!isPaused) { const obj = activeWords.find(w => w.id === data.id); if(obj) obj.isDragging = true; curTouch = { data, el, obj }; }};
-            el.ontouchmove = handleTouchMove;
-            el.ontouchend = handleTouchEnd;
-
-            document.getElementById('words-layer').appendChild(el);
-            activeWords.push({ id: data.id, el, data, y: -80, isDragging: false });
-            wordsSpawned++;
-            updateGameUI();
-        }
-
-        function processChoice(data, basketType) {
-            const basketEl = document.querySelector(`.basket[data-type="${basketType}"]`);
-            if(data.type === basketType) {
-                sessionCoins++; combo++;
-                basketEl.classList.remove('bounce'); void basketEl.offsetWidth; basketEl.classList.add('bounce');
-                if(combo === 5 && !isRewardMode) startRewardMode();
-                removeWord(data.id);
-            } else {
-                stopRewardMode(); combo = 0; basketEl.classList.add('shake'); setTimeout(() => basketEl.classList.remove('shake'), 500);
-                showError(data, basketType);
-            }
-            updateGameUI();
-        }
-
-        function gameLoop() {
-            if(!isPaused && gameActive) {
-                const limit = window.innerHeight * 0.85;
-                for (let i = activeWords.length - 1; i >= 0; i--) {
-                    const obj = activeWords[i];
-                    if(!obj.isDragging) {
-                        obj.y += (speedMode === 'slow' ? 1.5 : (speedMode === 'medium' ? 2.5 : 4));
-                        obj.el.style.top = obj.y + 'px';
-                        if(obj.y > limit) { stopRewardMode(); combo = 0; updateGameUI(); obj.el.remove(); activeWords.splice(i, 1); }
-                    }
-                }
-            }
-            if(gameActive) requestAnimationFrame(gameLoop);
-        }
-
-        function setupBaskets() {
-            document.getElementById('baskets-container').innerHTML = selectedTypes.map(t => `
-                <div class="basket ${typeColors[t]} flex-1 h-full rounded-t-[2.5rem] border-t-8" data-type="${t}" 
-                     ondragover="event.preventDefault(); this.classList.add('drag-over')" 
-                     ondragleave="this.classList.remove('drag-over')" 
-                     ondrop="handleDrop(event, '${t}')"><span class="p-2 text-xs">${t}</span></div>
-            `).join('');
-        }
-
-        function handleDrop(e, bt) { e.preventDefault(); e.currentTarget.classList.remove('drag-over'); processChoice(JSON.parse(e.dataTransfer.getData('application/json')), bt); }
-
-        function startRewardMode() {
-            isRewardMode = true; document.getElementById('body-main').classList.add('reward-mode');
-            rewardTimer = setInterval(() => {
-                if(!isRewardMode || !gameActive || isPaused) return;
-                const s = document.createElement('div');
-                s.className = 'star'; s.innerHTML = '⭐'; 
-                s.style.left = Math.random() * 85 + 'vw'; s.style.top = '-80px';
-                s.style.transition = "top 4s linear, opacity 0.5s";
-                document.getElementById('stars-layer').appendChild(s);
-                setTimeout(() => s.style.top = "105vh", 50);
-                const collect = (e) => { e.preventDefault(); sessionCoins += 2; updateGameUI(); s.style.transform = 'scale(2)'; s.style.opacity = '0'; setTimeout(() => s.remove(), 200); };
-                s.onmousedown = s.ontouchstart = collect;
-                setTimeout(() => { if(s.parentNode) s.remove(); }, 4000);
-            }, 750);
-        }
-
-        function stopRewardMode() { isRewardMode = false; clearInterval(rewardTimer); document.getElementById('body-main').classList.remove('reward-mode'); }
-
-        function toggleAdmin(s) { document.getElementById('admin-panel').classList.toggle('hidden', !s); }
-        function saveState() { localStorage.setItem('w_coins', totalCoins); localStorage.setItem('w_emojis', JSON.stringify(boughtEmojis)); localStorage.setItem('w_words_v12', JSON.stringify(customWords)); }
-
-        // KORRIGIERTE IMPORT FUNKTION
-        function importBulkList() {
-            const input = document.getElementById('bulk-input').value.trim();
-            if(!input) return;
-            
-            const lines = input.split('\n');
-            let added = 0;
-
-            lines.forEach(line => {
-                const p = line.split('/');
-                if(p.length === 3) {
-                    const word = p[0].trim();
-                    const base = p[1].trim();
-                    const typeInput = p[2].trim();
-                    
-                    // Finde Wortart (Groß/Kleinschreibung egal)
-                    const matchedType = wordTypes.find(t => t.toLowerCase() === typeInput.toLowerCase());
-                    
-                    if(word && base && matchedType) {
-                        customWords.push({word: word, base: base, type: matchedType});
-                        added++;
-                    }
-                }
-            });
-
-            if(added > 0) {
-                saveState();
-                renderAdminTable(); // Liste sofort aktualisieren
-                document.getElementById('bulk-input').value = '';
-            } else {
-                alert("Format: Wort/Grundform/Wortart\nBeispiel: Häuser/Haus/Nomen");
-            }
-        }
-
-        function addCustomWord() {
-            const w = document.getElementById('new-word').value.trim(), b = document.getElementById('new-base').value.trim(), t = document.getElementById('new-type').value;
-            if(w && b) { 
-                customWords.push({word:w, base:b, type:t}); 
-                saveState(); 
-                renderAdminTable();
-                document.getElementById('new-word').value = '';
-                document.getElementById('new-base').value = '';
-            }
-        }
-
-        function renderAdminTable() {
-            const tableBody = document.getElementById('word-list-table');
-            tableBody.innerHTML = customWords.map((w,i) => `
-                <tr class="border-b hover:bg-slate-50">
-                    <td class="p-3 font-bold">${w.word}</td>
-                    <td class="p-3 italic text-slate-400">${w.base}</td>
-                    <td class="p-3">
-                        <span class="px-2 py-1 rounded-lg text-[10px] font-black text-white ${typeColors[w.type].split(' ')[0]}">
-                            ${w.type}
-                        </span>
-                    </td>
-                    <td class="p-3 text-right">
-                        <button onclick="customWords.splice(${i},1); saveState(); renderAdminTable();" class="text-slate-300 hover:text-red-500 transition-colors">🗑️</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function goHome() { 
-            gameActive = false; isPaused = false; stopRewardMode(); clearInterval(spawnTimer); clearInterval(timerInterval);
-            document.getElementById('game-container').classList.add('hidden'); 
-            document.getElementById('result-modal').classList.add('hidden'); 
-            document.getElementById('start-menu').classList.remove('hidden');
-            document.getElementById('total-coins').innerText = totalCoins;
-        }
-
-        function updateGameUI() {
-            document.getElementById('game-coins-display').innerText = sessionCoins;
-            if(gameGoal === 'words') {
-                document.getElementById('counter-display').innerText = wordsSpawned;
-                document.getElementById('goal-label').innerText = "/20 Wörter";
-            } else {
-                document.getElementById('counter-display').innerText = timeLeft;
-                document.getElementById('goal-label').innerText = " Sek.";
-            }
-            const c = document.getElementById('combo-container');
-            if(combo >= 2) { c.classList.remove('hidden'); document.getElementById('combo-count').innerText = combo; } else c.classList.add('hidden');
-        }
-
-        function showError(data, clicked) { isPaused = true; document.getElementById('error-text').innerHTML = `<b>"${data.word}"</b> ist ein ${data.type}, kein ${clicked}.`; document.getElementById('base-display').innerText = data.base; document.getElementById('feedback-modal').classList.remove('hidden'); }
-        function resumeGame() { document.getElementById('feedback-modal').classList.add('hidden'); activeWords.forEach(w => w.el.remove()); activeWords = []; isPaused = false; }
-        function removeWord(id) { const i = activeWords.findIndex(w => w.id === id); if(i > -1) { activeWords[i].el.remove(); activeWords.splice(i, 1); } }
-        function endGame() { gameActive = false; clearInterval(spawnTimer); clearInterval(timerInterval); totalCoins += sessionCoins; document.getElementById('session-coins').innerText = sessionCoins; document.getElementById('result-modal').classList.remove('hidden'); saveState(); }
-
-        let curTouch = null;
-        function handleTouchMove(e) { 
-            if(!curTouch || isPaused) return; const t = e.touches[0]; 
-            curTouch.el.style.left = (t.clientX - 100) + 'px'; curTouch.el.style.top = (t.clientY - 40) + 'px'; curTouch.obj.y = t.clientY - 40; 
-            document.querySelectorAll('.basket').forEach(b => {
-                const r = b.getBoundingClientRect();
-                if(t.clientX > r.left && t.clientX < r.right && t.clientY > r.top) b.classList.add('drag-over'); else b.classList.remove('drag-over');
-            });
-        }
-        function handleTouchEnd(e) {
-            if(!curTouch) return; const t = e.changedTouches[0];
-            document.querySelectorAll('.basket').forEach(b => {
-                b.classList.remove('drag-over'); const r = b.getBoundingClientRect();
-                if(t.clientX > r.left && t.clientX < r.right && t.clientY > r.top) processChoice(curTouch.data, b.dataset.type);
-            });
-            if(curTouch.obj) curTouch.obj.isDragging = false; curTouch = null;
+    // Pronomen
+    { word: "ich", type: "Pronomen", base: "ich" },
+    { word: "du", type: "Pronomen", base: "du" },
+    { word: "er", type: "Pronomen", base: "er" },
+    { word: "sie", type: "Pronomen", base: "sie" },
+    { word: "es", type: "Pronomen", base: "es" },
+    { word: "wir", type: "Pronomen", base: "wir" },
+    { word: "ihr", type: "Pronomen", base: "ihr" },
+    { word: "mich", type: "Pronomen", base: "ich" },
+    { word: "dich", type: "Pronomen", base: "du" },
+    { word: "ihn", type: "Pronomen", base: "er" },
+    { word: "uns", type: "Pronomen", base: "wir" },
+    { word: "euch", type: "Pronomen", base: "ihr" },
+    { word: "mir", type: "Pronomen", base: "ich" },
+    { word: "dir", type: "Pronomen", base: "du" },
+    { word: "ihm", type: "Pronomen", base: "er" },
+    { word: "ihnen", type: "Pronomen", base: "sie" },
+    { word: "mein", type: "Pronomen", base: "mein" },
+    { word: "dein", type: "Pronomen", base: "dein" },
+    { word: "sein", type: "Pronomen", base: "sein" },
+    { word: "unser", type: "Pronomen", base: "unser" },
+    { word: "dieser", type: "Pronomen", base: "dieser" },
+    { word: "jener", type: "Pronomen", base: "jener" },
+    { word: "welcher", type: "Pronomen", base: "welcher" },
+    { word: "keiner", type: "Pronomen", base: "keiner" },
+    { word: "jeder", type: "Pronomen", base: "jeder" },
+    { word: "niemand", type: "Pronomen", base: "niemand" },
+    { word: "jemand", type: "Pronomen", base: "jemand" },
+    { word: "man", type: "Pronomen", base: "man" },
+    { word: "sich", type: "Pronomen", base: "sich" },
+    { word: "einander", type: "Pronomen", base: "einander" },
+    // Präpositionen
+    { word: "in", type: "Präposition", base: "in" },
+    { word: "auf", type: "Präposition", base: "auf" },
+    { word: "an", type: "Präposition", base: "an" },
+    { word: "unter", type: "Präposition", base: "unter" },
+    { word: "über", type: "Präposition", base: "über" },
+    { word: "neben", type: "Präposition", base: "neben" },
+    { word: "vor", type: "Präposition", base: "vor" },
+    { word: "hinter", type: "Präposition", base: "hinter" },
+    { word: "zwischen", type: "Präposition", base: "zwischen" },
+    { word: "durch", type: "Präposition", base: "durch" },
+    { word: "für", type: "Präposition", base: "für" },
+    { word: "gegen", type: "Präposition", base: "gegen" },
+    { word: "ohne", type: "Präposition", base: "ohne" },
+    { word: "um", type: "Präposition", base: "um" },
+    { word: "mit", type: "Präposition", base: "mit" },
+    { word: "nach", type: "Präposition", base: "nach" },
+    { word: "seit", type: "Präposition", base: "seit" },
+    { word: "von", type: "Präposition", base: "von" },
+    { word: "zu", type: "Präposition", base: "zu" },
+    { word: "bei", type: "Präposition", base: "bei" },
+    { word: "aus", type: "Präposition", base: "aus" },
+    { word: "außer", type: "Präposition", base: "außer" },
+    { word: "gegenüber", type: "Präposition", base: "gegenüber" },
+    { word: "trotz", type: "Präposition", base: "trotz" },
+    { word: "wegen", type: "Präposition", base: "wegen" },
+    { word: "während", type: "Präposition", base: "während" },
+    { word: "innerhalb", type: "Präposition", base: "innerhalb" },
+    { word: "außerhalb", type: "Präposition", base: "außerhalb" },
+    { word: "statt", type: "Präposition", base: "statt" },
+    { word: "entlang", type: "Präposition", base: "entlang" }
+            ];
         }
 
         window.onload = init;
